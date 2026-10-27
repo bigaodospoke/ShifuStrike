@@ -11,3 +11,4 @@ bin/
 
 .superpowers/
 libs/*.jar
+logs/
