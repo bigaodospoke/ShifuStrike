@@ -6,6 +6,7 @@ import com.shifustrike.config.ConfigManager
 import com.shifustrike.config.StrikeConfig
 import com.shifustrike.core.ShopEntry
 import com.shifustrike.data.SnapshotStorage
+import com.shifustrike.network.ServerNetworking
 import net.minecraft.core.registries.Registries
 import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
@@ -93,6 +94,7 @@ object MatchManager {
             pt.alive = false
             p.inventory.clearContent()
             Spectators.makeSpectator(match!!, p)
+            ServerNetworking.sendInfo(match!!, p)
             return
         }
         val arena = match?.arena ?: ArenaStorage.arena

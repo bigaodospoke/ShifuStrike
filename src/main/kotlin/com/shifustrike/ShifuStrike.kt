@@ -10,6 +10,7 @@ import com.shifustrike.guard.InteractionGuard
 import com.shifustrike.pointblank.HeadshotFlag
 import com.shifustrike.match.Deaths
 import com.shifustrike.match.MatchManager
+import com.shifustrike.network.ServerNetworking
 import com.shifustrike.registry.ModItems
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
@@ -30,6 +31,7 @@ object ShifuStrike : ModInitializer {
 
     override fun onInitialize() {
         ModItems.register()
+        ServerNetworking.register()
         ConfigManager.load()
 
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> StrikeCommands.register(dispatcher) }

@@ -21,6 +21,12 @@ import com.shifustrike.data.SnapshotStorage
 import com.shifustrike.data.applyFreeze
 import com.shifustrike.data.removeFreeze
 import com.shifustrike.guard.AreaGuard
+import com.shifustrike.network.KillFeedPayload
+import com.shifustrike.network.MatchClearPayload
+import com.shifustrike.network.MatchEndPayload
+import com.shifustrike.network.RoundEndPayload
+import com.shifustrike.network.ScoreLine
+import com.shifustrike.network.ServerNetworking
 import com.shifustrike.pointblank.EventItems
 import net.minecraft.ChatFormatting
 import net.minecraft.core.registries.Registries
@@ -93,6 +99,7 @@ class Match(
         }
         startedTeamSizes = Team.entries.associateWith { t -> players.values.count { it.team == t } }
         state = State.RUNNING
+        online().forEach { ServerNetworking.sendInfo(this, it.second) }
         startRound()
         broadcast("A partida começou! Primeiro time a ${cfg.vitoriasParaVencer} vitórias vence.")
         return null
@@ -195,6 +202,7 @@ class Match(
         Spectators.tick(this)
         if (clock.ticks % 10 == 0) AreaGuard.tick(this)
         bomb.tick()
+        if (clock.ticks % 10 == 0) ServerNetworking.sendStates(this)
         when (clock.phase) {
             Phase.LIVE, Phase.PLANTED -> RoundRules.evaluate(snapshot(bomb.state))?.let { endRound(it) }
             Phase.ROUND_END -> if (clock.roundEndDone) {
@@ -222,11 +230,13 @@ class Match(
         onRoundEnd(o)
     }
 
-    /** Avisa a rede (Task 16) do fim da rodada. */
-    var onRoundEnd: (RoundOutcome) -> Unit = {}
+    /** Fim da rodada: faixa no cliente. */
+    var onRoundEnd: (RoundOutcome) -> Unit = { o ->
+        ServerNetworking.broadcast(this, RoundEndPayload(o.winner, o.reason, score.getValue(Team.CT), score.getValue(Team.TR)))
+    }
 
-    /** Avisa a rede (Task 16) de cada morte, para o feed de kills. */
-    var onKill: (KillInfo) -> Unit = {}
+    /** Cada morte, para o feed de kills. */
+    var onKill: (KillInfo) -> Unit = { ServerNetworking.broadcast(this, KillFeedPayload(it)) }
 
     private fun reasonText(r: WinReason) = when (r) {
         WinReason.ELIMINATION -> "Eliminação"
@@ -250,6 +260,7 @@ class Match(
         val pt = players[p.uuid] ?: return
         Deaths.removeFromRound(this, p, pt)
         players.remove(p.uuid)
+        ServerNetworking.send(p, MatchClearPayload)
         restore(p)
     }
 
@@ -273,6 +284,9 @@ class Match(
                 Team.TR -> "Os Terroristas venceram a partida! (${score[Team.TR]} × ${score[Team.CT]})"
             }
             Msg.broadcast(online.map { it.second }, msg)
+            val lines = players.values.sortedWith(compareByDescending<Participant> { it.kills }.thenBy { it.deaths })
+                .map { ScoreLine(it.name, it.team, it.kills, it.deaths) }
+            ServerNetworking.broadcast(this, MatchEndPayload(winner, score.getValue(Team.CT), score.getValue(Team.TR), lines))
             online.forEach { (_, p) -> restore(p) }
             bomb.reset()
             clearDroppedItems()
