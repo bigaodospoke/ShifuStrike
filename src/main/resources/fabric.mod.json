@@ -18,7 +18,8 @@
       "com.shifustrike.gametest.SnapshotGameTest",
       "com.shifustrike.gametest.MatchGameTest",
       "com.shifustrike.gametest.RoundGameTest",
-      "com.shifustrike.gametest.DeathGameTest"
+      "com.shifustrike.gametest.DeathGameTest",
+      "com.shifustrike.gametest.BombGameTest"
     ]
   },
   "mixins": [

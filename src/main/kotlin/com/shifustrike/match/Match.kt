@@ -125,6 +125,7 @@ class Match(
         round++
         clock.startRound()
         bombWasPlanted = false
+        bomb.reset()
         clearDroppedItems()
         players.values.filter { !it.connected }.forEach { it.alive = false }
         for (team in Team.entries) {
@@ -149,6 +150,7 @@ class Match(
             }
         }
         roundStart = Team.entries.associateWith { t -> players.values.count { it.team == t && it.alive } }
+        bomb.giveToRandomTr()
         broadcast("Rodada $round — CT ${score[Team.CT]} × ${score[Team.TR]} TR")
     }
 
@@ -171,8 +173,11 @@ class Match(
         timeOver = clock.roundTimeOver,
     )
 
-    /** Estado da bomba para as regras da rodada (a C4 entra na Task 12). */
-    var bombState: () -> BombState = { BombState.NONE }
+    val bomb = Bomb(this)
+
+    /** Resultado da última rodada (para mensagens e testes). */
+    var lastOutcome: RoundOutcome? = null
+        private set
 
     fun tick() {
         if (state != State.RUNNING) return
@@ -187,8 +192,9 @@ class Match(
             if (clock.ticks % 10 == 0) Loadouts.normalize(p, shop)
         }
         Spectators.tick(this)
+        bomb.tick()
         when (clock.phase) {
-            Phase.LIVE, Phase.PLANTED -> RoundRules.evaluate(snapshot(bombState()))?.let { endRound(it) }
+            Phase.LIVE, Phase.PLANTED -> RoundRules.evaluate(snapshot(bomb.state))?.let { endRound(it) }
             Phase.ROUND_END -> if (clock.roundEndDone) {
                 val winner = RoundRules.matchWinner(score.getValue(Team.CT), score.getValue(Team.TR), cfg.vitoriasParaVencer)
                 if (winner != null) end(winner) else startRound()
@@ -200,6 +206,7 @@ class Match(
     fun endRound(o: RoundOutcome) {
         if (clock.phase == Phase.ROUND_END || clock.phase == Phase.MATCH_END) return
         clock.endRound()
+        lastOutcome = o
         score[o.winner] = score.getValue(o.winner) + 1
         val loser = o.winner.other()
         lossStreak[loser] = lossStreak.getValue(loser) + 1
@@ -265,6 +272,7 @@ class Match(
             }
             Msg.broadcast(online.map { it.second }, msg)
             online.forEach { (_, p) -> restore(p) }
+            bomb.reset()
             clearDroppedItems()
         }
         MatchManager.clear(this)

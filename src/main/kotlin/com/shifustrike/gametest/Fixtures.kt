@@ -68,5 +68,22 @@ object Fixtures {
         return Triple(m, ct, tr)
     }
 
+    /** `n` jogadores na partida já iniciada. */
+    fun startedN(h: GameTestHelper, n: Int, cfg: StrikeConfig = config()): Pair<Match, List<ServerPlayer>> {
+        val m = match(h, cfg)
+        val ps = (1..n).map { player(h) }
+        ps.forEach { MatchManager.join(it) }
+        val err = MatchManager.start(h.level.server)
+        if (err != null) throw IllegalStateException("start falhou: $err")
+        return m to ps
+    }
+
+    /** Põe o jogador no meio do bombsite A, "no chão" (jogador falso não manda pacote de movimento). */
+    fun noSiteA(h: GameTestHelper, p: ServerPlayer) {
+        val v = h.absoluteVec(Vec3(3.5, 2.0, 6.5))
+        p.teleportTo(h.level, v.x, v.y, v.z, 0f, 0f)
+        p.setOnGround(true)
+    }
+
     fun modo(p: ServerPlayer): GameType = p.gameMode.gameModeForPlayer
 }
