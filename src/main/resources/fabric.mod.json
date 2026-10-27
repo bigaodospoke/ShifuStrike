@@ -14,7 +14,8 @@
     "client": [{ "adapter": "kotlin", "value": "com.shifustrike.client.ShifuStrikeClient" }],
     "fabric-gametest": [
       "com.shifustrike.gametest.SmokeGameTest",
-      "com.shifustrike.gametest.ItemsGameTest"
+      "com.shifustrike.gametest.ItemsGameTest",
+      "com.shifustrike.gametest.SnapshotGameTest"
     ]
   },
   "mixins": [

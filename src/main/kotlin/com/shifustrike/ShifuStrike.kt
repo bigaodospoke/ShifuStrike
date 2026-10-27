@@ -3,6 +3,7 @@ package com.shifustrike
 import com.shifustrike.arena.ArenaStorage
 import com.shifustrike.command.StrikeCommands
 import com.shifustrike.config.ConfigManager
+import com.shifustrike.data.SnapshotStorage
 import com.shifustrike.registry.ModItems
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
@@ -23,7 +24,10 @@ object ShifuStrike : ModInitializer {
 
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> StrikeCommands.register(dispatcher) }
 
-        ServerLifecycleEvents.SERVER_STARTED.register { srv -> ArenaStorage.load(srv) }
+        ServerLifecycleEvents.SERVER_STARTED.register { srv ->
+            ArenaStorage.load(srv)
+            SnapshotStorage.init(srv)
+        }
 
         LOGGER.info("ShifuStrike carregado")
     }
