@@ -4,10 +4,14 @@ import com.shifustrike.arena.ArenaStorage
 import com.shifustrike.command.StrikeCommands
 import com.shifustrike.config.ConfigManager
 import com.shifustrike.data.SnapshotStorage
+import com.shifustrike.guard.CobblemonGuard
+import com.shifustrike.match.MatchManager
 import com.shifustrike.registry.ModItems
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.resources.ResourceLocation
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -28,6 +32,12 @@ object ShifuStrike : ModInitializer {
             ArenaStorage.load(srv)
             SnapshotStorage.init(srv)
         }
+        ServerLifecycleEvents.SERVER_STOPPING.register { srv -> MatchManager.shutdown(srv) }
+        ServerTickEvents.END_SERVER_TICK.register { srv -> MatchManager.tick(srv) }
+        ServerPlayConnectionEvents.JOIN.register { handler, _, _ -> MatchManager.onJoin(handler.player) }
+        ServerPlayConnectionEvents.DISCONNECT.register { handler, _ -> MatchManager.onDisconnect(handler.player) }
+
+        CobblemonGuard.register()
 
         LOGGER.info("ShifuStrike carregado")
     }
