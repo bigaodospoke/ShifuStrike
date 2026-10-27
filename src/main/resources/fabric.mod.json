@@ -13,7 +13,8 @@
     "main": [{ "adapter": "kotlin", "value": "com.shifustrike.ShifuStrike" }],
     "client": [{ "adapter": "kotlin", "value": "com.shifustrike.client.ShifuStrikeClient" }],
     "fabric-gametest": [
-      "com.shifustrike.gametest.SmokeGameTest"
+      "com.shifustrike.gametest.SmokeGameTest",
+      "com.shifustrike.gametest.ItemsGameTest"
     ]
   },
   "mixins": [

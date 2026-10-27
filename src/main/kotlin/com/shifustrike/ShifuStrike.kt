@@ -3,6 +3,7 @@ package com.shifustrike
 import com.shifustrike.arena.ArenaStorage
 import com.shifustrike.command.StrikeCommands
 import com.shifustrike.config.ConfigManager
+import com.shifustrike.registry.ModItems
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
@@ -17,6 +18,7 @@ object ShifuStrike : ModInitializer {
     fun id(path: String): ResourceLocation = ResourceLocation.fromNamespaceAndPath(MOD_ID, path)
 
     override fun onInitialize() {
+        ModItems.register()
         ConfigManager.load()
 
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> StrikeCommands.register(dispatcher) }

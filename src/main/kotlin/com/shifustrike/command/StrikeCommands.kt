@@ -1,6 +1,7 @@
 package com.shifustrike.command
 
 import com.mojang.brigadier.CommandDispatcher
+import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import com.shifustrike.arena.ArenaData
@@ -8,9 +9,13 @@ import com.shifustrike.arena.ArenaStorage
 import com.shifustrike.arena.Ponto
 import com.shifustrike.config.ConfigManager
 import com.shifustrike.core.Box
+import com.shifustrike.core.EntryKind
 import com.shifustrike.match.Msg
+import com.shifustrike.pointblank.EventItems
+import com.shifustrike.pointblank.PointBlankItems
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
+import net.minecraft.commands.SharedSuggestionProvider
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
@@ -47,6 +52,11 @@ object StrikeCommands {
                         }
                     })))
             .then(staff("diagnostico").executes { ctx -> diagnose(ctx) })
+            .then(staff("teste").then(Commands.literal("arma").then(
+                Commands.argument("chave", StringArgumentType.word())
+                    .suggests { _, b -> SharedSuggestionProvider.suggest(ConfigManager.shop.filter { it.item != null }.map { it.chave }.distinct(), b) }
+                    .executes { ctx -> giveTestWeapon(ctx, StringArgumentType.getString(ctx, "chave")) },
+            )))
             .then(staff("recarregar").executes { ctx ->
                 ConfigManager.load()
                 ok(ctx, "Configuração e loja recarregadas.")
@@ -117,6 +127,23 @@ object StrikeCommands {
         lines.forEach { text.append(Component.literal("\n$it")) }
         ctx.source.sendSuccess({ text }, false)
         return if (lines.any { it.startsWith("PROBLEMA") }) 0 else 1
+    }
+
+    /** Só para testar: dá a arma da loja carregada e com a reserva, marcada como item do evento. */
+    private fun giveTestWeapon(ctx: CommandContext<CommandSourceStack>, chave: String): Int {
+        val player = ctx.source.playerOrException
+        val e = ConfigManager.activeShop().firstOrNull { it.chave == chave && it.item != null }
+        if (e == null) {
+            ctx.source.sendFailure(Msg.error("Não há arma '$chave' na loja."))
+            return 0
+        }
+        val stacks = if (e.tipo == EntryKind.GRANADA) {
+            listOfNotNull(PointBlankItems.grenade())
+        } else {
+            listOfNotNull(PointBlankItems.loadedGun(player, e.item!!, e.pente)) + PointBlankItems.ammo(e.municao!!, e.reserva)
+        }
+        stacks.forEach { player.inventory.add(EventItems.mark(it)) }
+        return ok(ctx, "${e.nome} entregue.")
     }
 
     private fun ok(ctx: CommandContext<CommandSourceStack>, text: String): Int {
