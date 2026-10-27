@@ -1,16 +1,21 @@
 # ShifuStrike
 
-Evento de CS (Terroristas × Antiterroristas) para o servidor Eclipse Cobblemon, com as armas do PointBlank.
-Rodadas com compra (tecla **B**), bomba C4, desarme e economia do CS, até um time chegar a 5 vitórias.
+Evento de CS (Terroristas × Antiterroristas) para o servidor **Eclipse Cobblemon**, com as armas do **PointBlank**.
+A staff cria a partida, os jogadores entram e o mod cuida do resto: rodadas com compra (tecla **B**), bomba C4,
+desarme, economia do CS e placar, até um time chegar a 5 vitórias. No fim, todo mundo recebe o inventário de volta.
 
-- Design aprovado: `docs/superpowers/specs/2026-10-26-shifustrike-design.md`
-- Plano de implementação: `docs/superpowers/plans/2026-10-27-shifustrike.md`
-- Prints da tela de compra e do HUD: `docs/prints/`
+- Minecraft 1.21.1 · Fabric · Cobblemon 1.7.3 · PointBlank 2.2.0
+- Precisa estar no servidor **e** no cliente (tela de compra, HUD e itens próprios)
+
+![Tela de compra](docs/prints/loja_ct.png)
+
+![HUD](docs/prints/hud.png)
 
 ## Instalação (ordem importa)
 
-O mod precisa estar **no servidor e no cliente** de todo jogador, junto com o **PointBlank 2.2.0** e o **GeckoLib** (≥ 4.5.8).
-Como o mod registra itens próprios (faca, C4, kit), um jogador sem ele **não consegue entrar no servidor**.
+Baixe `shifustrike-1.0.0.jar` em [Releases](../../releases). O mod vai **no servidor e no cliente** de todo jogador,
+junto com o **PointBlank 2.2.0** e o **GeckoLib** (≥ 4.5.8). Como ele registra itens próprios (faca, C4, kit), um jogador
+sem ele **não consegue entrar no servidor**.
 
 1. Coloque `shifustrike-1.0.0.jar`, o PointBlank e o GeckoLib no modpack/launcher dos jogadores.
 2. Só depois que os jogadores atualizarem, suba os mesmos jars para `/mods` do servidor
@@ -56,6 +61,7 @@ O inventário, os Pokémon, o modo de jogo e a vida voltam no fim — inclusive 
 
 ## Desenvolvimento
 
+- Design aprovado: `docs/superpowers/specs/2026-10-26-shifustrike-design.md`; plano: `docs/superpowers/plans/2026-10-27-shifustrike.md`.
 - Copie `pointblank-fabric-1.21-2.2.0.jar` para `libs/` (só no ambiente de dev; nunca vai dentro do nosso jar).
 - `./gradlew test` (regras do CS) e `./gradlew runGametest` (partida inteira com jogadores falsos, inclusive dentro de claim do Flan).
 - `./gradlew build` gera `build/libs/shifustrike-1.0.0.jar`.
