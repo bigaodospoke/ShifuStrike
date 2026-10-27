@@ -1,8 +1,11 @@
 package com.shifustrike.client
 
 import com.mojang.blaze3d.platform.InputConstants
+import com.shifustrike.client.hud.StrikeHud
 import com.shifustrike.client.screen.BuyScreen
 import com.shifustrike.network.KillFeedPayload
+import com.shifustrike.network.SpectateCyclePayload
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback
 import com.shifustrike.network.MatchClearPayload
 import com.shifustrike.network.MatchEndPayload
 import com.shifustrike.network.MatchInfoPayload
@@ -23,7 +26,13 @@ object ShifuStrikeClient : ClientModInitializer {
     )
 
     override fun onInitializeClient() {
+        HudRenderCallback.EVENT.register { g, delta -> StrikeHud.render(g, delta) }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
+            // morto na partida: clique troca de colega assistido
+            val s = ClientMatch.state
+            if (ClientMatch.active && s != null && !s.alive && mc.screen == null) {
+                while (mc.options.keyAttack.consumeClick()) ClientPlayNetworking.send(SpectateCyclePayload)
+            }
             while (BUY_KEY.consumeClick()) {
                 if (mc.screen != null || !ClientMatch.active) continue
                 val s = ClientMatch.state!!

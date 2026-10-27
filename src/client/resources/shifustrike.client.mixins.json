@@ -3,7 +3,7 @@
   "package": "com.shifustrike.mixin.client",
   "compatibilityLevel": "JAVA_21",
   "minVersion": "0.8",
-  "client": [],
+  "client": ["GuiMixin"],
   "injectors": {
     "defaultRequire": 1
   }

@@ -1,6 +1,7 @@
 package com.shifustrike.client
 
 import com.shifustrike.ShifuStrike
+import com.shifustrike.client.hud.StrikeHud
 import com.shifustrike.client.screen.BuyScreen
 import com.shifustrike.core.Box
 import com.shifustrike.core.DefaultShop
@@ -12,9 +13,14 @@ import com.shifustrike.network.MatchInfoPayload
 import com.shifustrike.network.MatchStatePayload
 import com.shifustrike.network.ShopEntryDto
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import com.shifustrike.core.WinReason
+import com.shifustrike.network.RoundEndPayload
 import net.minecraft.client.Minecraft
 import net.minecraft.client.Screenshot
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.screens.TitleScreen
+import net.minecraft.network.chat.Component
 
 /**
  * Só para desenvolvimento: com a variável de ambiente SHIFUSTRIKE_PREVIEW=loja|loja_ct, o cliente abre a tela de compra
@@ -32,7 +38,7 @@ object ScreenPreview {
             }
             ticks++
             when (ticks) {
-                40 -> mc.setScreen(BuyScreen(ShifuStrikeClient.BUY_KEY))
+                40 -> mc.setScreen(if (mode == "hud") hudScreen() else BuyScreen(ShifuStrikeClient.BUY_KEY))
                 80 -> Screenshot.grab(mc.gameDirectory, "preview_$mode.png", mc.mainRenderTarget) { ShifuStrike.LOGGER.info("Preview salvo: {}", it.string) }
                 100 -> mc.stop()
             }
@@ -48,6 +54,25 @@ object ScreenPreview {
             ),
         )
         ClientMatch.onKill(KillInfo("Jogador1", Team.CT, "Jogador2", Team.TR, "AK-47", true))
+    }
+
+    /** Tela vazia que só desenha o HUD por cima do fundo (fora de um mundo o HUD normal não aparece). */
+    private fun hudScreen(): Screen {
+        ClientMatch.onState(MatchStatePayload(Phase.LIVE, 6, 3, 2, 1460, 0, 4, 3, 5150, 88, true, true, false, false, null, true, ""))
+        ClientMatch.onKill(KillInfo("Jogador3", Team.TR, "Jogador4", Team.CT, "Faca", false))
+        ClientMatch.onRoundEnd(RoundEndPayload(Team.CT, WinReason.BOMB_DEFUSED, 3, 2))
+        return object : Screen(Component.literal("hud")) {
+            override fun renderBackground(g: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+                g.fill(0, 0, width, height, 0xFF5A7A4A.toInt())
+            }
+
+            override fun render(g: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+                super.render(g, mouseX, mouseY, partialTick)
+                StrikeHud.render(g, null)
+            }
+
+            override fun isPauseScreen() = false
+        }
     }
 
     @Suppress("unused")
