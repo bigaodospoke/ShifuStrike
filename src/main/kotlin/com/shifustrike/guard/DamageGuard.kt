@@ -7,6 +7,7 @@ import com.shifustrike.pointblank.HeadshotFlag
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.tags.DamageTypeTags
 import net.minecraft.world.damagesource.DamageSource
+import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.player.Player
 
@@ -27,6 +28,12 @@ object DamageGuard {
             m.clock.frozen -> false
             else -> true
         }
+    }
+
+    /** Dano ou ataque que envolve um jogador da partida em andamento: quem decide é a partida, não claims de outros mods. */
+    fun matchDecides(attacker: Entity?, target: Entity): Boolean {
+        val m = MatchManager.match?.takeIf { it.state == Match.State.RUNNING } ?: return false
+        return (target is ServerPlayer && target.uuid in m.players) || (attacker is ServerPlayer && attacker.uuid in m.players)
     }
 
     /** Chamado pelo mixin depois da armadura do Minecraft: aplica o colete do CS e devolve o dano em vida do Minecraft. */

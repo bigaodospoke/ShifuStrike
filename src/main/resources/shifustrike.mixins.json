@@ -6,6 +6,7 @@
   "mixins": [
     "CommandsMixin",
     "ExplosionMixin",
+    "FlanPvpMixin",
     "HurtingItemMixin",
     "ItemEntityMixin",
     "LevelMixin",

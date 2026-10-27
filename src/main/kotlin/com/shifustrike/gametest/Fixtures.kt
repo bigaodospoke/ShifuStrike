@@ -47,9 +47,16 @@ object Fixtures {
         return MatchManager.createForTest(h.level.server, arena(h), cfg, ConfigManager.activeShop())
     }
 
+    /**
+     * Jogador recém-entrado tem 60 ticks de invulnerabilidade, que só descontam quando ele é processado; o jogador falso,
+     * longe no mapa de teste, às vezes fica parado enquanto os chunks carregam. Zera para os testes de dano não oscilarem.
+     */
+    private val spawnInvulnerable = ServerPlayer::class.java.getDeclaredField("spawnInvulnerableTime").apply { isAccessible = true }
+
     @Suppress("DEPRECATION")
     fun player(h: GameTestHelper, withDiamond: Boolean = true): ServerPlayer {
         val p = h.makeMockServerPlayerInLevel()
+        spawnInvulnerable.setInt(p, 0)
         p.setGameMode(GameType.SURVIVAL)
         if (withDiamond) p.inventory.add(ItemStack(Items.DIAMOND))
         p.teleportTo(h.level, h.absoluteVec(Vec3(4.5, 2.0, 20.5)).x, h.absoluteVec(Vec3(4.5, 2.0, 20.5)).y, h.absoluteVec(Vec3(4.5, 2.0, 20.5)).z, 0f, 0f)

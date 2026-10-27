@@ -59,6 +59,9 @@ dependencies {
     // Só no ambiente de dev: o PointBlank (All Rights Reserved) nunca entra no nosso jar.
     modLocalRuntime("software.bernie.geckolib:geckolib-fabric-1.21.1:${property("geckolib_version")}")
     modLocalRuntime(files("libs/pointblank-fabric-1.21-2.2.0.jar"))
+    // Flan (claims) para testar PvP dentro de claim. A 1.12.x do servidor foi feita com um Loom mais novo que
+    // o nosso e não carrega aqui; a 1.11.3 tem o mesmo bloqueio de dano (Entity.isInvulnerableTo → preventDamage).
+    modLocalRuntime("maven.modrinth:flan:1.21.1-1.11.3-fabric")
 
     // O Loom tira do runServer as bibliotecas que o Minecraft só usa no cliente (ICU4J é uma delas),
     // mas o Showdown do Cobblemon precisa dela. Em produção o Cobblemon traz a própria cópia embutida (71.1).
@@ -100,6 +103,11 @@ tasks.jar {
     from("LICENSE") {
         rename { "${it}_${project.base.archivesName.get()}" }
     }
+}
+
+// GameTest sempre num mundo novo (o Flan guarda dados de jogadores falsos e quebra na próxima subida; claims não sobram)
+tasks.matching { it.name == "runGametest" }.configureEach {
+    doFirst { delete(layout.buildDirectory.dir("gametest/world")) }
 }
 
 // Permite mandar comandos pelo console ao rodar ./gradlew runServer; o Showdown precisa do ICU4J também no gametest
