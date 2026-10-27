@@ -11,11 +11,21 @@ import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.effect.MobEffectInstance
+import net.minecraft.world.entity.ai.attributes.AttributeModifier
 import net.minecraft.world.entity.ai.attributes.Attributes
 import net.minecraft.world.level.GameType
 
 /** Modificador de atributo que deixa o jogador parado no congelamento do início da rodada. */
 val FREEZE_MODIFIER_ID: ResourceLocation = ShifuStrike.id("congelado")
+
+fun applyFreeze(p: ServerPlayer) {
+    for (attr in listOf(Attributes.MOVEMENT_SPEED, Attributes.JUMP_STRENGTH)) {
+        val inst = p.getAttribute(attr) ?: continue
+        if (!inst.hasModifier(FREEZE_MODIFIER_ID)) {
+            inst.addTransientModifier(AttributeModifier(FREEZE_MODIFIER_ID, -1.0, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL))
+        }
+    }
+}
 
 fun removeFreeze(p: ServerPlayer) {
     p.getAttribute(Attributes.MOVEMENT_SPEED)?.removeModifier(FREEZE_MODIFIER_ID)

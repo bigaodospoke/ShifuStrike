@@ -57,8 +57,8 @@ class StrikeConfig {
     fun sanitize() {
         segundosCongelado = segundosCongelado.coerceIn(0, 60)
         segundosCompra = segundosCompra.coerceAtLeast(segundosCongelado)
-        segundosRodada = segundosRodada.coerceAtLeast(10)
-        segundosBomba = segundosBomba.coerceAtLeast(5)
+        segundosRodada = segundosRodada.coerceAtLeast(1)
+        segundosBomba = segundosBomba.coerceAtLeast(1)
         segundosPlantar = segundosPlantar.coerceIn(1, 20)
         segundosDesarmar = segundosDesarmar.coerceIn(1, 20)
         segundosFimRodada = segundosFimRodada.coerceIn(1, 30)

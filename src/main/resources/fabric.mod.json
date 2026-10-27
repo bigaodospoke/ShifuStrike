@@ -16,7 +16,8 @@
       "com.shifustrike.gametest.SmokeGameTest",
       "com.shifustrike.gametest.ItemsGameTest",
       "com.shifustrike.gametest.SnapshotGameTest",
-      "com.shifustrike.gametest.MatchGameTest"
+      "com.shifustrike.gametest.MatchGameTest",
+      "com.shifustrike.gametest.RoundGameTest"
     ]
   },
   "mixins": [

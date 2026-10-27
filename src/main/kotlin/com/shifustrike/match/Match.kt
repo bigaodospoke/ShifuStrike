@@ -5,19 +5,33 @@ import com.cobblemon.mod.common.util.party
 import com.shifustrike.arena.ArenaData
 import com.shifustrike.arena.Ponto
 import com.shifustrike.config.StrikeConfig
+import com.shifustrike.core.BombState
+import com.shifustrike.core.Economy
+import com.shifustrike.core.Phase
 import com.shifustrike.core.RoundClock
+import com.shifustrike.core.RoundOutcome
+import com.shifustrike.core.RoundRules
+import com.shifustrike.core.RoundSnapshot
 import com.shifustrike.core.ShopEntry
 import com.shifustrike.core.Team
 import com.shifustrike.core.TeamBalancer
+import com.shifustrike.core.WinReason
 import com.shifustrike.data.PlayerSnapshot
 import com.shifustrike.data.SnapshotStorage
+import com.shifustrike.data.applyFreeze
+import com.shifustrike.data.removeFreeze
+import com.shifustrike.pointblank.EventItems
+import net.minecraft.ChatFormatting
 import net.minecraft.core.registries.Registries
+import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.item.ItemEntity
 import net.minecraft.world.level.GameType
+import net.minecraft.world.phys.AABB
 import java.util.UUID
 import kotlin.random.Random
 
@@ -100,20 +114,122 @@ class Match(
     }
 
     fun startRound() {
-        round++
-        clock.startRound()
+        // time que tinha gente e ficou sem ninguém conectado perde a partida
         for (team in Team.entries) {
-            online().filter { it.first.team == team }.shuffled(random).forEachIndexed { i, (pt, p) ->
-                teleportToSpawn(p, team, i)
-                p.setGameMode(GameType.ADVENTURE)
-                pt.alive = true
+            if ((startedTeamSizes[team] ?: 0) > 0 && online().none { it.first.team == team }) {
+                broadcast("Os ${teamName(team)} ficaram sem jogadores.")
+                end(team.other())
+                return
             }
         }
+        round++
+        clock.startRound()
+        bombWasPlanted = false
+        clearDroppedItems()
+        players.values.filter { !it.connected }.forEach { it.alive = false }
+        for (team in Team.entries) {
+            online().filter { it.first.team == team }.shuffled(random).forEachIndexed { i, (pt, p) ->
+                val fresh = !pt.alive
+                p.stopUsingItem()
+                teleportToSpawn(p, team, i)
+                p.setGameMode(GameType.ADVENTURE)
+                p.setCamera(p)
+                p.health = p.maxHealth
+                p.removeAllEffects()
+                p.clearFire()
+                p.fallDistance = 0f
+                applyFreeze(p)
+                Loadouts.giveRoundBasics(p, team, shop, fresh)
+                if (fresh) {
+                    pt.armor = 0
+                    pt.helmet = false
+                }
+                pt.alive = true
+                pt.purchases.clear()
+            }
+        }
+        roundStart = Team.entries.associateWith { t -> players.values.count { it.team == t && it.alive } }
+        broadcast("Rodada $round — CT ${score[Team.CT]} × ${score[Team.TR]} TR")
     }
+
+    /** Vivos de cada time quando a rodada começou (time vazio não perde por eliminação). */
+    private var roundStart: Map<Team, Int> = emptyMap()
+
+    /** Se a C4 foi plantada nesta rodada (bônus do TR que perde). Preenchido pela bomba. */
+    var bombWasPlanted = false
+
+    val lossStreak = mutableMapOf(Team.CT to 0, Team.TR to 0)
+
+    private fun alive(team: Team) = players.values.count { it.team == team && it.alive && it.connected }
+
+    fun snapshot(bomb: BombState = BombState.NONE) = RoundSnapshot(
+        ctAlive = alive(Team.CT),
+        trAlive = alive(Team.TR),
+        ctStarted = roundStart[Team.CT] ?: 0,
+        trStarted = roundStart[Team.TR] ?: 0,
+        bomb = bomb,
+        timeOver = clock.roundTimeOver,
+    )
+
+    /** Estado da bomba para as regras da rodada (a C4 entra na Task 12). */
+    var bombState: () -> BombState = { BombState.NONE }
 
     fun tick() {
         if (state != State.RUNNING) return
+        val wasFrozen = clock.frozen
         clock.tick()
+        if (wasFrozen && !clock.frozen) online().forEach { removeFreeze(it.second) }
+        for ((pt, p) in online()) {
+            if (!pt.alive) continue
+            // fome abaixo de 18 não regenera vida; acima de 6 ainda deixa correr
+            p.foodData.foodLevel = 17
+            p.foodData.setSaturation(0f)
+            if (clock.ticks % 10 == 0) Loadouts.normalize(p, shop)
+        }
+        when (clock.phase) {
+            Phase.LIVE, Phase.PLANTED -> RoundRules.evaluate(snapshot(bombState()))?.let { endRound(it) }
+            Phase.ROUND_END -> if (clock.roundEndDone) {
+                val winner = RoundRules.matchWinner(score.getValue(Team.CT), score.getValue(Team.TR), cfg.vitoriasParaVencer)
+                if (winner != null) end(winner) else startRound()
+            }
+            else -> {}
+        }
+    }
+
+    fun endRound(o: RoundOutcome) {
+        if (clock.phase == Phase.ROUND_END || clock.phase == Phase.MATCH_END) return
+        clock.endRound()
+        score[o.winner] = score.getValue(o.winner) + 1
+        val loser = o.winner.other()
+        lossStreak[loser] = lossStreak.getValue(loser) + 1
+        lossStreak[o.winner] = 0
+        val rules = cfg.economy()
+        val pay = Economy.roundPayout(rules, o, lossStreak.getValue(loser), bombWasPlanted)
+        players.values.forEach { it.money = Economy.add(rules, it.money, pay.getValue(it.team)) }
+        val title = Component.literal("${teamName(o.winner)} venceram").withStyle(if (o.winner == Team.CT) ChatFormatting.AQUA else ChatFormatting.GOLD)
+        val sub = Component.literal(reasonText(o.reason))
+        online().forEach { (_, p) -> Msg.title(p, title, sub, stay = 60) }
+        onRoundEnd(o)
+    }
+
+    /** Avisa a rede (Task 16) do fim da rodada. */
+    var onRoundEnd: (RoundOutcome) -> Unit = {}
+
+    private fun reasonText(r: WinReason) = when (r) {
+        WinReason.ELIMINATION -> "Eliminação"
+        WinReason.TIME -> "Tempo esgotado"
+        WinReason.BOMB_EXPLODED -> "A bomba explodiu"
+        WinReason.BOMB_DEFUSED -> "A bomba foi desarmada"
+        WinReason.FORFEIT -> "O outro time ficou sem jogadores"
+    }
+
+    fun teamName(t: Team) = if (t == Team.CT) "Antiterroristas" else "Terroristas"
+
+    /** Itens do evento largados no chão da área somem. */
+    fun clearDroppedItems() {
+        val box = arena.area ?: return
+        val aabb = AABB(box.minX.toDouble(), box.minY.toDouble(), box.minZ.toDouble(), box.maxX + 1.0, box.maxY + 1.0, box.maxZ + 1.0)
+        level.getEntitiesOfClass(ItemEntity::class.java, aabb) { EventItems.isEvent(it.item) }.forEach { it.discard() }
     }
 
     /** Tira um jogador da partida em andamento e devolve as coisas dele. */
@@ -143,6 +259,7 @@ class Match(
             }
             Msg.broadcast(online.map { it.second }, msg)
             online.forEach { (_, p) -> restore(p) }
+            clearDroppedItems()
         }
         MatchManager.clear(this)
     }
