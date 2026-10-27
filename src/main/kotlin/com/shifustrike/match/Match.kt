@@ -186,6 +186,7 @@ class Match(
             p.foodData.setSaturation(0f)
             if (clock.ticks % 10 == 0) Loadouts.normalize(p, shop)
         }
+        Spectators.tick(this)
         when (clock.phase) {
             Phase.LIVE, Phase.PLANTED -> RoundRules.evaluate(snapshot(bombState()))?.let { endRound(it) }
             Phase.ROUND_END -> if (clock.roundEndDone) {
@@ -215,6 +216,9 @@ class Match(
     /** Avisa a rede (Task 16) do fim da rodada. */
     var onRoundEnd: (RoundOutcome) -> Unit = {}
 
+    /** Avisa a rede (Task 16) de cada morte, para o feed de kills. */
+    var onKill: (KillInfo) -> Unit = {}
+
     private fun reasonText(r: WinReason) = when (r) {
         WinReason.ELIMINATION -> "Eliminação"
         WinReason.TIME -> "Tempo esgotado"
@@ -234,7 +238,9 @@ class Match(
 
     /** Tira um jogador da partida em andamento e devolve as coisas dele. */
     fun leave(p: ServerPlayer) {
-        players.remove(p.uuid) ?: return
+        val pt = players[p.uuid] ?: return
+        Deaths.removeFromRound(this, p, pt)
+        players.remove(p.uuid)
         restore(p)
     }
 

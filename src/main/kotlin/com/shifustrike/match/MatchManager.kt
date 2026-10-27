@@ -67,6 +67,13 @@ object MatchManager {
 
     fun participant(id: UUID): Participant? = match?.takeIf { it.state == Match.State.RUNNING }?.players?.get(id)
 
+    /** Dois jogadores vivos da partida, de times diferentes. */
+    fun areOpponents(a: ServerPlayer, b: ServerPlayer): Boolean {
+        val pa = participant(a) ?: return false
+        val pb = participant(b) ?: return false
+        return pa.alive && pb.alive && pa.team != pb.team
+    }
+
     fun isPlaying(p: ServerPlayer): Boolean = participant(p.uuid) != null
     fun isPlaying(id: UUID): Boolean = participant(id) != null
 
@@ -81,7 +88,11 @@ object MatchManager {
     fun onJoin(p: ServerPlayer) {
         val pt = participant(p)
         if (pt != null) {
+            // volta no meio da partida: assiste até a próxima rodada
             pt.connected = true
+            pt.alive = false
+            p.inventory.clearContent()
+            Spectators.makeSpectator(match!!, p)
             return
         }
         val arena = match?.arena ?: ArenaStorage.arena
@@ -90,7 +101,9 @@ object MatchManager {
     }
 
     fun onDisconnect(p: ServerPlayer) {
-        participant(p)?.connected = false
+        val pt = participant(p) ?: return
+        Deaths.removeFromRound(match!!, p, pt)
+        pt.connected = false
     }
 
     fun shutdown(server: MinecraftServer) {
