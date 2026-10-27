@@ -20,7 +20,8 @@
       "com.shifustrike.gametest.RoundGameTest",
       "com.shifustrike.gametest.DeathGameTest",
       "com.shifustrike.gametest.BombGameTest",
-      "com.shifustrike.gametest.PurchaseGameTest"
+      "com.shifustrike.gametest.PurchaseGameTest",
+      "com.shifustrike.gametest.DamageGameTest"
     ]
   },
   "mixins": [

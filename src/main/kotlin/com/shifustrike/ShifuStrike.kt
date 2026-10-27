@@ -5,6 +5,8 @@ import com.shifustrike.command.StrikeCommands
 import com.shifustrike.config.ConfigManager
 import com.shifustrike.data.SnapshotStorage
 import com.shifustrike.guard.CobblemonGuard
+import com.shifustrike.guard.DamageGuard
+import com.shifustrike.pointblank.HeadshotFlag
 import com.shifustrike.match.Deaths
 import com.shifustrike.match.MatchManager
 import com.shifustrike.registry.ModItems
@@ -40,6 +42,8 @@ object ShifuStrike : ModInitializer {
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ -> MatchManager.onJoin(handler.player) }
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ -> MatchManager.onDisconnect(handler.player) }
 
+        ServerTickEvents.START_SERVER_TICK.register { HeadshotFlag.clear() }
+        ServerLivingEntityEvents.ALLOW_DAMAGE.register { entity, source, _ -> DamageGuard.allowDamage(entity, source) }
         ServerLivingEntityEvents.ALLOW_DEATH.register { entity, source, _ ->
             if (entity is ServerPlayer) Deaths.onAllowDeath(entity, source) else true
         }

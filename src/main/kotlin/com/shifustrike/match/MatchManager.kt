@@ -67,11 +67,11 @@ object MatchManager {
 
     fun participant(id: UUID): Participant? = match?.takeIf { it.state == Match.State.RUNNING }?.players?.get(id)
 
-    /** Dois jogadores vivos da partida, de times diferentes. */
+    /** Dois jogadores vivos da partida, de times diferentes (ou o próprio jogador: a granada dele o fere). */
     fun areOpponents(a: ServerPlayer, b: ServerPlayer): Boolean {
         val pa = participant(a) ?: return false
         val pb = participant(b) ?: return false
-        return pa.alive && pb.alive && pa.team != pb.team
+        return pa.alive && pb.alive && (pa.team != pb.team || a === b)
     }
 
     fun isPlaying(p: ServerPlayer): Boolean = participant(p.uuid) != null

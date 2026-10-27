@@ -42,6 +42,8 @@ object Fixtures {
 
     fun match(h: GameTestHelper, cfg: StrikeConfig = config()): Match {
         reset(h)
+        // como o servidor do Eclipse: PvP ligado (as proteções da partida não podem depender dele)
+        h.level.server.isPvpAllowed = true
         return MatchManager.createForTest(h.level.server, arena(h), cfg, ConfigManager.activeShop())
     }
 
