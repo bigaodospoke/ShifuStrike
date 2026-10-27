@@ -78,7 +78,7 @@ object Loadouts {
         if (stack == null) return false
         p.inventory.setItem(slot, EventItems.mark(stack, purchaseId))
         if (e.municao != null && e.reserva > 0) {
-            PointBlankItems.ammo(e.municao, e.reserva).forEach { insertMain(p, EventItems.mark(it)) }
+            PointBlankItems.ammo(e.municao, e.reserva).forEach { insertMain(p, EventItems.mark(it, purchaseId)) }
         }
         return true
     }
