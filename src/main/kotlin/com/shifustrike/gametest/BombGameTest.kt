@@ -117,7 +117,7 @@ class BombGameTest : FabricGameTest {
         }
     }
 
-    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "bomba_ct_nao_pega", required = false, timeoutTicks = 200)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "bomba_ct_nao_pega", timeoutTicks = 200)
     fun ct_nao_pega_c4(h: GameTestHelper) {
         val (_, ct, tr) = Fixtures.started(h, cfg())
         tr.inventory.clearContent()

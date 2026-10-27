@@ -21,7 +21,8 @@
       "com.shifustrike.gametest.DeathGameTest",
       "com.shifustrike.gametest.BombGameTest",
       "com.shifustrike.gametest.PurchaseGameTest",
-      "com.shifustrike.gametest.DamageGameTest"
+      "com.shifustrike.gametest.DamageGameTest",
+      "com.shifustrike.gametest.GuardGameTest"
     ]
   },
   "mixins": [

@@ -20,6 +20,7 @@ import com.shifustrike.data.PlayerSnapshot
 import com.shifustrike.data.SnapshotStorage
 import com.shifustrike.data.applyFreeze
 import com.shifustrike.data.removeFreeze
+import com.shifustrike.guard.AreaGuard
 import com.shifustrike.pointblank.EventItems
 import net.minecraft.ChatFormatting
 import net.minecraft.core.registries.Registries
@@ -192,6 +193,7 @@ class Match(
             if (clock.ticks % 10 == 0) Loadouts.normalize(p, shop)
         }
         Spectators.tick(this)
+        if (clock.ticks % 10 == 0) AreaGuard.tick(this)
         bomb.tick()
         when (clock.phase) {
             Phase.LIVE, Phase.PLANTED -> RoundRules.evaluate(snapshot(bomb.state))?.let { endRound(it) }

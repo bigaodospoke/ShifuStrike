@@ -3,7 +3,15 @@
   "package": "com.shifustrike.mixin",
   "compatibilityLevel": "JAVA_21",
   "minVersion": "0.8",
-  "mixins": ["HurtingItemMixin", "LivingEntityMixin", "ServerPlayerMixin"],
+  "mixins": [
+    "CommandsMixin",
+    "ExplosionMixin",
+    "HurtingItemMixin",
+    "ItemEntityMixin",
+    "LevelMixin",
+    "LivingEntityMixin",
+    "ServerPlayerMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

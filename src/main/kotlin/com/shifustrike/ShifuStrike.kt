@@ -6,6 +6,7 @@ import com.shifustrike.config.ConfigManager
 import com.shifustrike.data.SnapshotStorage
 import com.shifustrike.guard.CobblemonGuard
 import com.shifustrike.guard.DamageGuard
+import com.shifustrike.guard.InteractionGuard
 import com.shifustrike.pointblank.HeadshotFlag
 import com.shifustrike.match.Deaths
 import com.shifustrike.match.MatchManager
@@ -49,6 +50,7 @@ object ShifuStrike : ModInitializer {
         }
 
         CobblemonGuard.register()
+        InteractionGuard.register()
 
         LOGGER.info("ShifuStrike carregado")
     }
