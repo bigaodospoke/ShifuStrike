@@ -91,6 +91,8 @@ class Match(
         val teams = TeamBalancer.split(lobby.toList(), random)
         for (id in lobby) {
             val p = player(id) ?: continue
+            // fechar a tela antes de guardar: o que está na grade de criação ou no cursor volta para o inventário e entra no salvo
+            p.closeContainer()
             SnapshotStorage.save(id, PlayerSnapshot.capture(p))
             p.stopUsingItem()
             p.inventory.clearContent()
@@ -193,6 +195,8 @@ class Match(
         clock.tick()
         if (wasFrozen && !clock.frozen) online().forEach { removeFreeze(it.second) }
         for ((pt, p) in online()) {
+            // baú do Ender, carrinho com baú, burro...: nenhuma tela além do próprio inventário durante a partida
+            if (p.containerMenu !== p.inventoryMenu) p.closeContainer()
             if (!pt.alive) continue
             // fome abaixo de 18 não regenera vida; acima de 6 ainda deixa correr
             p.foodData.foodLevel = 17
@@ -265,9 +269,7 @@ class Match(
     }
 
     private fun restore(p: ServerPlayer) {
-        val s = SnapshotStorage.load(p.uuid) ?: return
-        s.restore(p, arena.saida, level)
-        SnapshotStorage.delete(p.uuid)
+        SnapshotStorage.restoreAndForget(p, arena.saida, level)
     }
 
     /** Fim da partida (vencedor null = cancelada). Quem está offline recebe tudo de volta ao entrar. */

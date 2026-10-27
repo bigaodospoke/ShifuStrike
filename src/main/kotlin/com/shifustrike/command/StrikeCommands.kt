@@ -106,6 +106,11 @@ object StrikeCommands {
 
     /** Muda o mapa e salva. Ao marcar algo (`marks`), o mapa passa a ser da dimensão de quem marcou. */
     private fun editArena(ctx: CommandContext<CommandSourceStack>, done: String, marks: Boolean = true, change: (ArenaData) -> Unit): Int {
+        // a partida usa este mesmo mapa: mudar no meio (ex.: apagar os spawns) quebraria a rodada
+        if (MatchManager.match != null) {
+            ctx.source.sendFailure(Msg.error("Há uma partida aberta; edite o mapa depois que ela acabar (/cs cancelar)."))
+            return 0
+        }
         val arena = ArenaStorage.arena
         if (marks) {
             val dim = ctx.source.level.dimension().location().toString()

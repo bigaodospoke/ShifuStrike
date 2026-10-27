@@ -59,7 +59,10 @@ class PlayerSnapshot(val tag: CompoundTag) {
     /** Devolve tudo. Vai para `exit` (no `exitLevel`) se for dado; senão, para onde o jogador estava. */
     fun restore(p: ServerPlayer, exit: Ponto?, exitLevel: ServerLevel?) {
         p.stopUsingItem()
+        // fecha qualquer tela: a grade de criação e o cursor voltam para o inventário, que é limpo em seguida
+        p.closeContainer()
         p.inventory.clearContent()
+        p.inventoryMenu.craftSlots.clearContent()
         p.containerMenu.carried = net.minecraft.world.item.ItemStack.EMPTY
         p.inventory.load(tag.getList("inv", Tag.TAG_COMPOUND.toInt()))
         p.inventory.selected = tag.getInt("sel").coerceIn(0, 8)

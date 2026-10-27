@@ -34,6 +34,21 @@ class BombGameTest : FabricGameTest {
         h.succeed()
     }
 
+    /** TR que sobrevive com a C4 não pode gerar uma segunda bomba na rodada seguinte. */
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "bomba_unica", timeoutTicks = 300)
+    fun c4_unica_depois_da_rodada(h: GameTestHelper) {
+        val (m, ps) = Fixtures.startedN(h, 4, Fixtures.config { segundosCongelado = 1; segundosCompra = 2; segundosRodada = 3; segundosFimRodada = 1 })
+        // os dois TR sobrevivem com uma C4 cada (pior caso de sobra)
+        m.online().filter { it.first.team == Team.TR }.forEach { it.second.inventory.setItem(Loadouts.SLOT_EXTRA, net.minecraft.world.item.ItemStack(ModItems.C4)) }
+        h.runAfterDelay(115) {
+            h.assertTrue(m.round == 2, "rodada=${m.round}")
+            val total = ps.sumOf { it.inventory.countItem(ModItems.C4) }
+            h.assertTrue(total == 1, "C4 na rodada 2: $total")
+            Fixtures.reset(h)
+            h.succeed()
+        }
+    }
+
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "bomba_onde", timeoutTicks = 200)
     fun plantar_fora_do_site_nao_deixa(h: GameTestHelper) {
         val (m, _, tr) = Fixtures.started(h, cfg())

@@ -80,4 +80,6 @@ num `runServer` com `online-mode=false`, ou um servidor de teste com o modpack.
 - [ ] Morto vira espectador preso ao colega; clique troca de colega.
 - [ ] Fim da partida: os dois voltam à saída com o inventário e o modo de jogo de antes.
 - [ ] Fechar o servidor no meio, subir de novo e entrar: o inventário original volta.
-- [ ] No servidor real: o PvP funciona no mapa mesmo dentro do claim do Flan.
+- [ ] No servidor real: o PvP funciona no mapa mesmo dentro do claim do Flan (`/cs diagnostico` não mostra problema).
+- [ ] Com o EasyAuth ativo: cair o servidor no meio, entrar de novo e logar — o inventário original volta.
+- [ ] Se o modpack tiver slots extras (acessórios, mochila vestida), confira que o que estava neles volta no fim.

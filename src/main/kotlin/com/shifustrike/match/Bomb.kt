@@ -39,7 +39,13 @@ class Bomb(private val m: Match) {
 
     fun carrier(): ServerPlayer? = m.online().firstOrNull { (pt, p) -> pt.alive && pt.team == Team.TR && p.inventory.countItem(ModItems.C4) > 0 }?.second
 
+    /** Uma C4 só por rodada: tira de todo mundo (sobrevivente que ficou com ela inclusive) e dá a um TR sorteado. */
     fun giveToRandomTr() {
+        for ((_, p) in m.online()) {
+            val inv = p.inventory
+            for (i in 0 until inv.containerSize) if (inv.getItem(i).`is`(ModItems.C4)) inv.setItem(i, ItemStack.EMPTY)
+            if (p.containerMenu.carried.`is`(ModItems.C4)) p.containerMenu.carried = ItemStack.EMPTY
+        }
         val trs = m.online().filter { (pt, _) -> pt.alive && pt.team == Team.TR }.map { it.second }
         val p = trs.randomOrNull(m.random) ?: return
         p.inventory.setItem(Loadouts.SLOT_EXTRA, ItemStack(ModItems.C4))

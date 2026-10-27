@@ -8,6 +8,7 @@ import com.shifustrike.pointblank.EventItems
 import com.shifustrike.registry.ModItems
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
+import net.fabricmc.fabric.api.event.player.UseEntityCallback
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.Container
 import net.minecraft.world.InteractionResult
@@ -24,6 +25,10 @@ object InteractionGuard {
             if (container) InteractionResult.FAIL else InteractionResult.PASS
         }
         AttackEntityCallback.EVENT.register { player, level, _, target, _ ->
+            if (!level.isClientSide && MatchManager.isPlaying(player.uuid) && target !is Player) InteractionResult.FAIL else InteractionResult.PASS
+        }
+        // moldura, suporte de armadura, carrinho com baú, burro: onde dava para guardar item do evento
+        UseEntityCallback.EVENT.register { player, level, _, target, _ ->
             if (!level.isClientSide && MatchManager.isPlaying(player.uuid) && target !is Player) InteractionResult.FAIL else InteractionResult.PASS
         }
     }

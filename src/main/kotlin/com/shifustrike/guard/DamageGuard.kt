@@ -30,10 +30,14 @@ object DamageGuard {
         }
     }
 
-    /** Dano ou ataque que envolve um jogador da partida em andamento: quem decide é a partida, não claims de outros mods. */
+    /**
+     * Dano entre jogadores da partida (ou sem atacante, como a C4): quem decide é a partida, não claims de outros mods.
+     * Qualquer outra combinação (decoração do mapa, quem está fora) fica com o claim.
+     */
     fun matchDecides(attacker: Entity?, target: Entity): Boolean {
         val m = MatchManager.match?.takeIf { it.state == Match.State.RUNNING } ?: return false
-        return (target is ServerPlayer && target.uuid in m.players) || (attacker is ServerPlayer && attacker.uuid in m.players)
+        if (target !is ServerPlayer || target.uuid !in m.players) return false
+        return attacker == null || (attacker is ServerPlayer && attacker.uuid in m.players)
     }
 
     /** Chamado pelo mixin depois da armadura do Minecraft: aplica o colete do CS e devolve o dano em vida do Minecraft. */

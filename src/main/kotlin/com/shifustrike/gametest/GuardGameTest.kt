@@ -18,6 +18,12 @@ import net.minecraft.world.InteractionResult
 import net.minecraft.world.entity.item.ItemEntity
 import net.minecraft.world.level.GameType
 import net.minecraft.world.level.Level
+import com.shifustrike.guard.DamageGuard
+import net.fabricmc.fabric.api.event.player.UseEntityCallback
+import net.minecraft.network.chat.Component
+import net.minecraft.world.SimpleMenuProvider
+import net.minecraft.world.entity.decoration.ArmorStand
+import net.minecraft.world.inventory.ChestMenu
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.Vec3
@@ -140,9 +146,61 @@ class GuardGameTest : FabricGameTest {
     fun comando_bloqueado_na_partida(h: GameTestHelper) {
         val (_, ct, _) = Fixtures.started(h)
         val antes = ct.gameMode.gameModeForPlayer
-        h.level.server.commands.performPrefixedCommand(ct.createCommandSourceStack().withPermission(4), "gamemode creative")
+        // o mesmo caminho do comando digitado no chat (ServerGamePacketListenerImpl → Commands.performCommand)
+        val cmds = h.level.server.commands
+        cmds.performCommand(cmds.dispatcher.parse("gamemode creative", ct.createCommandSourceStack().withPermission(4)), "gamemode creative")
         h.assertTrue(ct.gameMode.gameModeForPlayer == antes, "comando de fora da lista rodou na partida")
         h.assertTrue(MatchManager.isPlaying(ct), "saiu da partida")
+        Fixtures.reset(h)
+        h.succeed()
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "guarda_outra_dimensao", timeoutTicks = 200)
+    fun vivo_em_outra_dimensao_volta(h: GameTestHelper) {
+        val (m, ct, _) = Fixtures.started(h)
+        val nether = h.level.server.getLevel(Level.NETHER)!!
+        ct.teleportTo(nether, 0.5, 70.0, 0.5, 0f, 0f)
+        h.runAfterDelay(25) {
+            h.assertTrue(ct.level() === m.level, "continua em ${ct.level().dimension().location()}")
+            Fixtures.reset(h)
+            h.succeed()
+        }
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "guarda_entidade_menu", timeoutTicks = 100)
+    fun nao_usa_entidade_nem_menu_de_fora(h: GameTestHelper) {
+        val (_, ct, _) = Fixtures.started(h)
+        val suporte = ArmorStand(h.level, ct.x, ct.y, ct.z)
+        h.level.addFreshEntity(suporte)
+        val r = UseEntityCallback.EVENT.invoker().interact(ct, h.level, InteractionHand.MAIN_HAND, suporte, null)
+        h.assertTrue(r == InteractionResult.FAIL, "participante usou entidade: $r")
+        // baú do Ender e outros menus sem bloco "Container": fechados na hora
+        ct.openMenu(SimpleMenuProvider({ id, inv, _ -> ChestMenu.threeRows(id, inv) }, Component.literal("teste")))
+        h.runAfterDelay(3) {
+            h.assertTrue(ct.containerMenu === ct.inventoryMenu, "menu de fora continuou aberto")
+            Fixtures.reset(h)
+            h.succeed()
+        }
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "guarda_flan_alvo")
+    fun partida_so_decide_dano_entre_jogadores_da_partida(h: GameTestHelper) {
+        val (_, ct, tr) = Fixtures.started(h)
+        val fora = Fixtures.player(h)
+        val suporte = ArmorStand(h.level, ct.x, ct.y, ct.z)
+        h.assertTrue(DamageGuard.matchDecides(ct, tr), "CT contra TR")
+        h.assertTrue(DamageGuard.matchDecides(null, tr), "bomba/queda no TR")
+        h.assertTrue(!DamageGuard.matchDecides(ct, suporte), "granada da partida tiraria a proteção do claim de decorações")
+        h.assertTrue(!DamageGuard.matchDecides(ct, fora), "participante contra quem está fora")
+        Fixtures.reset(h)
+        h.succeed()
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "guarda_mapa_na_partida")
+    fun mapa_nao_muda_durante_partida(h: GameTestHelper) {
+        Fixtures.started(h)
+        val r = h.level.server.commands.dispatcher.execute("cs mapa limpar spawns ct", h.level.server.createCommandSourceStack())
+        h.assertTrue(r == 0, "o mapa foi editado com partida aberta")
         Fixtures.reset(h)
         h.succeed()
     }

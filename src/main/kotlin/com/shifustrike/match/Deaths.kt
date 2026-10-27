@@ -76,6 +76,8 @@ object Deaths {
     /** Larga no chão a melhor arma e a C4; o resto do inventário some. */
     fun dropOnDeath(m: Match, p: ServerPlayer) {
         p.stopUsingItem()
+        p.closeContainer()
+        p.inventoryMenu.craftSlots.clearContent()
         val inv = p.inventory
         val drops = mutableListOf<ItemStack>()
         Loadouts.bestWeapon(p, m.shop)?.let { drops += inv.removeItemNoUpdate(it) }

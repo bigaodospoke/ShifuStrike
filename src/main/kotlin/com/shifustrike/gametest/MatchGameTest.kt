@@ -8,7 +8,16 @@ import com.shifustrike.match.MatchManager
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest
 import net.minecraft.gametest.framework.GameTest
 import net.minecraft.gametest.framework.GameTestHelper
+import com.shifustrike.pointblank.EventItems
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.nbt.NbtAccounter
+import net.minecraft.nbt.NbtIo
+import net.minecraft.nbt.Tag
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
+import net.minecraft.world.level.storage.LevelResource
+import java.nio.file.Files
 import net.minecraft.world.level.GameType
 import net.minecraft.world.phys.Vec3
 
@@ -45,6 +54,38 @@ class MatchGameTest : FabricGameTest {
             h.assertTrue(!SnapshotStorage.has(p.uuid), "arquivo ficou")
         }
         h.assertTrue(MatchManager.match == null, "partida não foi apagada")
+        h.succeed()
+    }
+
+    /** Se o servidor cair logo depois da devolução, o disco já tem o inventário devolvido (não o da partida). */
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "partida_salva_disco")
+    fun restauracao_salva_no_disco(h: GameTestHelper) {
+        val (_, ct, _) = Fixtures.started(h)
+        MatchManager.cancel(h.level.server)
+        val f = h.level.server.getWorldPath(LevelResource.PLAYER_DATA_DIR).resolve("${ct.uuid}.dat")
+        h.assertTrue(Files.exists(f), "os dados do jogador não foram gravados depois da devolução")
+        val inv = NbtIo.readCompressed(f, NbtAccounter.unlimitedHeap()).getList("Inventory", Tag.TAG_COMPOUND.toInt())
+        h.assertTrue((0 until inv.size).any { inv.getCompound(it).getString("id") == "minecraft:diamond" }, "o disco não tem o diamante devolvido")
+        h.succeed()
+    }
+
+    /** Item na grade de criação do inventário: o do jogador não some no início, o do evento não vaza no fim. */
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "partida_grade")
+    fun grade_de_criacao_nao_perde_nem_vaza(h: GameTestHelper) {
+        Fixtures.match(h)
+        val a = Fixtures.player(h)
+        val b = Fixtures.player(h)
+        a.inventoryMenu.craftSlots.setItem(0, ItemStack(Items.EMERALD))
+        MatchManager.join(a)
+        MatchManager.join(b)
+        MatchManager.start(h.level.server)
+        val awp = BuiltInRegistries.ITEM.get(ResourceLocation.parse("pointblank:l96a1"))
+        a.inventoryMenu.craftSlots.setItem(1, EventItems.mark(ItemStack(awp)))
+        MatchManager.cancel(h.level.server)
+        val grade = a.inventoryMenu.craftSlots
+        val esmeraldas = a.inventory.countItem(Items.EMERALD) + (0 until grade.containerSize).sumOf { if (grade.getItem(it).`is`(Items.EMERALD)) grade.getItem(it).count else 0 }
+        h.assertTrue(esmeraldas == 1, "esmeralda do jogador: $esmeraldas")
+        h.assertTrue(a.inventory.countItem(awp) == 0 && (0 until grade.containerSize).none { grade.getItem(it).`is`(awp) }, "a AWP do evento vazou")
         h.succeed()
     }
 

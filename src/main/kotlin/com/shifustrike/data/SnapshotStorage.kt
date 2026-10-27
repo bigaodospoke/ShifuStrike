@@ -2,6 +2,7 @@ package com.shifustrike.data
 
 import com.shifustrike.ShifuStrike
 import com.shifustrike.arena.Ponto
+import com.shifustrike.mixin.PlayerListInvoker
 import com.shifustrike.pointblank.EventItems
 import com.shifustrike.util.SafeFiles
 import net.minecraft.nbt.NbtAccounter
@@ -45,12 +46,21 @@ object SnapshotStorage {
 
     fun has(id: UUID): Boolean = Files.exists(file(id))
 
+    /**
+     * Devolve o que foi guardado, grava o jogador no disco e só então apaga o salvo: se o servidor cair logo depois,
+     * o disco já tem o inventário devolvido. Devolve false se não havia salvo legível.
+     */
+    fun restoreAndForget(p: ServerPlayer, exit: Ponto?, exitLevel: ServerLevel?): Boolean {
+        val s = load(p.uuid) ?: return false
+        s.restore(p, exit, exitLevel)
+        (p.server.playerList as PlayerListInvoker).`shifustrike$save`(p)
+        delete(p.uuid)
+        return true
+    }
+
     /** Jogador entrando no servidor fora de uma partida: devolve o que foi guardado ou, sem salvo, tira itens do evento. */
     fun restoreOnJoin(p: ServerPlayer, exit: Ponto?, exitLevel: ServerLevel?) {
-        val s = load(p.uuid)
-        if (s != null) {
-            s.restore(p, exit, exitLevel)
-            delete(p.uuid)
+        if (restoreAndForget(p, exit, exitLevel)) {
             ShifuStrike.LOGGER.info("Inventário de {} devolvido depois do evento", p.gameProfile.name)
         } else {
             EventItems.purge(p)
