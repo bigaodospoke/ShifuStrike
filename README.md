@@ -49,7 +49,7 @@ Fique no lugar e rode:
 | `/cs teste arma <chave>` | staff | dá uma arma da loja carregada (para testar) |
 
 Durante a partida os jogadores só usam `/cs` e mensagens (`/msg`, `/tell`, `/w`, `/r`); o resto (`/home`, `/tpa`, `/spawn`...) fica bloqueado.
-O inventário, os Pokémon, o modo de jogo e a vida voltam no fim — inclusive se o servidor cair: a pessoa recebe tudo ao entrar de novo.
+O inventário, os Pokémon, o modo de jogo e a vida voltam no fim, inclusive se o servidor cair: a pessoa recebe tudo ao entrar de novo.
 
 ## Configuração
 
@@ -61,7 +61,6 @@ O inventário, os Pokémon, o modo de jogo e a vida voltam no fim — inclusive 
 
 ## Desenvolvimento
 
-- Design aprovado: `docs/superpowers/specs/2026-10-26-shifustrike-design.md`; plano: `docs/superpowers/plans/2026-10-27-shifustrike.md`.
 - Copie `pointblank-fabric-1.21-2.2.0.jar` para `libs/` (só no ambiente de dev; nunca vai dentro do nosso jar).
 - `./gradlew test` (regras do CS) e `./gradlew runGametest` (partida inteira com jogadores falsos, inclusive dentro de claim do Flan).
 - `./gradlew build` gera `build/libs/shifustrike-1.0.0.jar`.
@@ -73,7 +72,7 @@ O que os testes automáticos não conseguem ver. Use dois clientes (`./gradlew r
 num `runServer` com `online-mode=false`, ou um servidor de teste com o modpack.
 
 - [ ] `/cs criar`, os dois `/cs entrar`, `/cs iniciar`: vão para spawns de times diferentes e o inventário some.
-- [ ] 10 s parados; B abre a loja (e não abre nada do Xaero junto — se abrir, troque a tecla em Opções > Controles > CS).
+- [ ] 10 s parados; B abre a loja (e não abre nada do Xaero junto; se abrir, troque a tecla em Opções > Controles > CS).
 - [ ] Comprar pistola, colete e rifle: o dinheiro desconta; a arma atira **em modo aventura** e recarrega gastando a munição.
 - [ ] Clique direito na loja reembolsa; depois de 30 s a loja fecha e B avisa "Fora do tempo de compra".
 - [ ] Tiro na cabeça aparece com "(HS)" no feed de kills.
@@ -87,5 +86,5 @@ num `runServer` com `online-mode=false`, ou um servidor de teste com o modpack.
 - [ ] Fim da partida: os dois voltam à saída com o inventário e o modo de jogo de antes.
 - [ ] Fechar o servidor no meio, subir de novo e entrar: o inventário original volta.
 - [ ] No servidor real: o PvP funciona no mapa mesmo dentro do claim do Flan (`/cs diagnostico` não mostra problema).
-- [ ] Com o EasyAuth ativo: cair o servidor no meio, entrar de novo e logar — o inventário original volta.
+- [ ] Com o EasyAuth ativo: cair o servidor no meio, entrar de novo e logar: o inventário original volta.
 - [ ] Se o modpack tiver slots extras (acessórios, mochila vestida), confira que o que estava neles volta no fim.
